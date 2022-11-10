@@ -224,4 +224,5 @@ water_birds_heat_map <- ggplot(water_birds.by.country.na.rm) +
 # The n on the scale represents the number of individuals sequenced. This label could not be changed in the code. I asked Dr. Steinke about it and he could not find a solution. He informed me to keep it and that it would not affect my mark.
 plot_grid(water_birds_heat_map, shore_birds_heat_map, labels=c("A", "B"), ncol = 1, nrow = 2)
 
-## hi there hello 
+## Add histogram
+Plot the histogram distribution
