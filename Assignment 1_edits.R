@@ -225,4 +225,6 @@ water_birds_heat_map <- ggplot(water_birds.by.country.na.rm) +
 plot_grid(water_birds_heat_map, shore_birds_heat_map, labels=c("A", "B"), ncol = 1, nrow = 2)
 
 ## Add histogram
-Plot the histogram distribution
+##Plot the histogram distribution
+
+###Lets try it out
