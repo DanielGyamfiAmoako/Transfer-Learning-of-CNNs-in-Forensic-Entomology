@@ -229,6 +229,5 @@ plot_grid(water_birds_heat_map, shore_birds_heat_map, labels=c("A", "B"), ncol =
 
 ###Lets try it out
 
-###Another set of trys
+###Another set of try and see
 
-#lets try again
