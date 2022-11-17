@@ -1,31 +1,51 @@
+#Install all the packages so anyone can run the analysis automatically.
+#Install packages
+install.packages("tidyverse")
+install.packages("vegan")
+install.packages("ggplot2")
+install.packages("EnvStats")
+
+library(dplyr)
 library(tidyverse)
 library(vegan)
+library(ggplot2)
 library(maps)
 library(cowplot)
 library(viridis)
+library(EnvStats)
+
+#Set working directory where all your analysis and files will be deposited.
+setwd("~/Documents/GitHub/Subproject_1")
 
 ##### Load Data from BOLD####
 #Load Bold Data sets of waterfowl (family = Charadriiformes) and shorebirds (family = Anatidae)
 #I kept these lines commented as I saved the data to my working directory so I do not need to keep downloading it
 #This data was downloaded on September 16th, 2022
 
-#water_birds <-  read_tsv("http://www.boldsystems.org/index.php/API_Public/combined?taxon=Charadriiformes&format=tsv")
-#shore_birds <- read_tsv("http://www.boldsystems.org/index.php/API_Public/combined?taxon=Anatidae&format=tsv")
+water_birds <-  read_tsv("http://www.boldsystems.org/index.php/API_Public/combined?taxon=Charadriiformes&format=tsv")
+shore_birds <- read_tsv("http://www.boldsystems.org/index.php/API_Public/combined?taxon=Anatidae&format=tsv")
 
 #I will save the water_birds and the shore_birds to my mac to avoid re-loading them every time. To download them you can simply uncomment the code above
 
-#write_tsv(water_birds, "water_birds_BOLD_data.tsv")
+write_tsv(water_birds, "water_birds_BOLD_data.tsv")
 
 water_birds <- read_tsv("water_birds_BOLD_data.tsv")
 
-#write_tsv(shore_birds, "shore_birds_BOLD_data.tsv")
+write_tsv(shore_birds, "shore_birds_BOLD_data.tsv")
 
 shore_birds <- read_tsv("shore_birds_BOLD_data.tsv")
 
-##### Part 1: Bar plot of sampling efforts #####
-#I am interested in the latitude at which individuals were sequenced. Therefore, let's plot a histogram of latitudes for both species so we can visually check the data loaded correctly.   
-hist(water_birds$lat, xlab = "Latitude", ylab = "Number of Sqeuence Species" )
-hist(shore_birds$lat, xlab = "", ylab = "Number of Sqeuence Species")
+##### Part 1: Bar plot of sampling efforts ##### (corrections)
+#I am interested in the latitude at which individuals were sequenced. Therefore, let's plot a histogram of latitudes for both species so we can visually check the data loaded correctly.  
+#I edited the histogram to get "color" and "breaks"out of the data exploration.
+#The hist() function has a default algorithm for determining the number of bars to use in the histogram based on the density of the data. However, you can override the default option by setting the breaks argument to something else. Here, we use more bars to try to get more detail.
+hist(water_birds$lat, xlab = "Latitude", ylab = "Number of Sqeuence Species", col = "green", breaks = 100)
+hist(shore_birds$lat, xlab = "", ylab = "Number of Sqeuence Species", col = "red", breaks = 100)
+
+
+#We can get a little more detail using the rug() function to show us the actual data points. This allows us to explore below the histogram the range for the large cluster data.
+rug(water_birds$lat)
+rug(shore_birds$lat)
 
 
 #Since I am trying to compare individuals sequenced in summer habitats to winter habitats, I next want to separate them based on that. To do this, I will set the latitude 40 as the cut off between summer/winter and use the filter function to separate them.
@@ -48,6 +68,50 @@ shore_winter
 summary(shore_winter)
 
 
+#Check for outliers
+#Extract the values of the potential outliers based on the IQR criterion with regards to the boxplot.stats()$out function: (Corrections). It is a good practice to always check the results of the statistical test for outliers against the boxplot to make sure we tested all potential outliers. Potential outliers will be deposited on top of the boxplot.
+#For water_summer 
+out <- boxplot.stats(water_summer$lat)$out
+boxplot(water_summer$lat,
+        ylab = "Number of Sqeuence Species"
+)
+mtext(paste("Outliers: ", paste(out, collapse = ", ")))
+#Results = No outliers found.
+
+#For water_winter
+out <- boxplot.stats(water_winter$lat)$out
+boxplot(water_winter$lat,
+        ylab = "Number of Sqeuence Species"
+)
+mtext(paste("Outliers: ", paste(out, collapse = ", ")))
+#Results = No outliers found.
+
+#For shore_winter
+out <- boxplot.stats(shore_winter$lat)$out
+boxplot(shore_winter$lat,
+        ylab = "Number of Sqeuence Species"
+)
+mtext(paste("Outliers: ", paste(out, collapse = ", ")))
+#Results = No outliers found.
+
+#For shore_summer
+out <- boxplot.stats(shore_summer$lat)$out
+boxplot(shore_summer$lat,
+        ylab = "Number of Sqeuence Species"
+)
+mtext(paste("Outliers: ", paste(out, collapse = ", ")))
+#Results = Some possible outliers found.
+
+#Perform the Rosner test using the rosnerTest() function from the {EnvStats} package to confirm the outliers predictions. This function requires at least 2 arguments: the data and the number of suspected outliers k (with the number of suspected outliers based on the IQR criterion from the boxplot). This was also repeated for all the data sets and was fine.
+#We show the "shore_summer$lat: data because it predicted potential outliers.
+#K =30 was used because of the potential IQR from the boxplot.
+
+test <- rosnerTest(shore_summer$lat,
+                   k = 30
+)
+test
+#From the results based on the Rosner statistical test, we see that there is on outliers and that all observations predicted us outliers from the boxplot were "false" when computed. Hence we can proceed with further analysis
+
 # Next, I will get the length of all the summer and winter data sets. This will allow me to figure out how many individuals were sequenced in summer or winter for both families.
 length(water_summer$lat)
 length(water_winter$lat)
@@ -61,9 +125,11 @@ barplot(c(length(water_summer$lat), length(water_winter$lat)),  names = c("Summe
 
 barplot(c(length(shore_summer$lat),length(shore_winter$lat)), names = c("Summer", "Winter"), xlab = "Bird location", ylab = "Number of Sqeuence Species" )
 
-#I will then create a bar plot which has all four groups
-barplot(c(length(water_summer$lat), length(water_winter$lat), length(shore_summer$lat), length(shore_winter$lat)), names = c("Summer Waterfowl", "Winter Waterfowl", "Summer Shorebirds", "Winter Shorebirds"), xlab = "Bird location", ylab = "Number Sequenced", col = c("dark green", "blue"), ylim = c(0, 1400))
 
+#I will then create a bar plot which has all four groups.
+#I edited the figures to make it publication ready! 
+#The 'Title', 'Figure legend' and 'data source' added makes the figure self-explanatory.
+barplot(c(length(water_summer$lat), length(water_winter$lat), length(shore_summer$lat), length(shore_winter$lat)), names = c("Summer Waterfowl", "Winter Waterfowl", "Summer Shorebirds", "Winter Shorebirds"), xlab = "Bird location", ylab = "Number Sequenced", col = c("dark green", "blue"), ylim = c(0, 1500), main = "Comparison of Birds in different habitat", sub= "Data from the BARCODE OF LIFE DATA SYSTEM v4", legend.text = c("Summer", "Winter"), args.legend=list(title="Legend"))
 
 #This function is to conduct a T-test to see if there is a significant difference between the summer and winter of each family
 t.test(water_summer$lat, water_winter$lat)
@@ -102,8 +168,6 @@ BINs.spread_shore_winter <- pivot_wider(data = Count.by.BIN_shore_winter, names_
 curve_shore_winter <- rarecurve(BINs.spread_shore_winter, xlab = "Individuals Barcoded", ylab = "BIN Richness")
 
 
-
-
 # Next, I would like to plot all of the accumulation curves on the same graph. This will allow for easy comparison between the four groups. 
 as_tibble_rc <- function(x){
   # convert rarecurve() output to data.frame
@@ -130,12 +194,16 @@ as_tibble_rc <- function(x){
   result
 }
 
+#I edited the figure to make it publication ready and added the function to automatically save your figure in a pdf in your working directory.
 comb_acc <- as_tibble_rc(c(curve_water_summer, curve_water_winter, curve_shore_summer, curve_shore_winter))
 ggplot(data = comb_acc , mapping =aes(x= Sample_size, y=Species, color = Site)) + 
   geom_line() + labs(y= "BIN Counts", x= "Sample Size") + 
   labs(color = "Species") + labs(colour_subtitle = "Legend") +
-  scale_colour_discrete(labels = c("1" = "Summer Waterfowl", "2" = "Winter Waterfowl", "3" = "Summer Shorebirds", "4" = "Winter Shorebirds"))
-
+  scale_colour_discrete(labels = c("1" = "Summer Waterfowl", "2" = "Winter Waterfowl", "3" = "Summer Shorebirds", "4" = "Winter Shorebirds"))+
+#Use the labs function to label the title of the figure
+  labs(title="Species Accummilative Curve by BIN DataIndividuals", tag = "Figure 2")
+#Save your figure automatically using the ggsave with the pdf option.
+  ggsave("PLOT_Figure2.pdf")
 
 
 ##### Part 3: World heat map ##### 
@@ -156,7 +224,6 @@ water_birds.by.country <- water_birds %>%
   count(country)
 
 water_birds.by.country
-
 
 
 #Next, I need to remove any individuals from the data set that did not have a country indicated to prevent errors later in the code
@@ -194,7 +261,6 @@ water_birds.by.country.na.rm[71,1] = "UK"
 water_birds.by.country.na.rm[72,1] = "USA"
 
 
-
 #Finally, I am ready to plot my heat maps of my bird data over the map of the world
 # I used the source (Rudis et al., 2021) to help me with the viridis colour package
 
@@ -224,10 +290,3 @@ water_birds_heat_map <- ggplot(water_birds.by.country.na.rm) +
 # The n on the scale represents the number of individuals sequenced. This label could not be changed in the code. I asked Dr. Steinke about it and he could not find a solution. He informed me to keep it and that it would not affect my mark.
 plot_grid(water_birds_heat_map, shore_birds_heat_map, labels=c("A", "B"), ncol = 1, nrow = 2)
 
-## Add histogram
-##Plot the histogram distribution
-
-###Lets try it out
-
-###Another set of try an see
-##Just to confirm with Bradley the changes appear
