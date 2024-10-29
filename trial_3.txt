@@ -1,0 +1,4 @@
+# Trying to check if it works
+print("Hello, World!")  # Outputs: Hello, World!
+
+# Use VS code directly
