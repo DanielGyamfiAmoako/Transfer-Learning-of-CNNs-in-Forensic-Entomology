@@ -2,3 +2,4 @@
 print("Hello, World!")  # Outputs: Hello, World!
 
 # Use VS code directly
+print("R Studio is working")
